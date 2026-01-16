@@ -1,40 +1,79 @@
-# Github Globe
+# 🌎 Hoodie Globe
 
-![github-globe made by Zhanar Osmonaliev](https://janarosmonaliev.github.io/github-globe/src/files/github-globe-banner.png)
+A stunning 3D globe experience for a hoodie brand. Users send positive messages that travel across the globe and get printed on someone else's hoodie.
 
-## Inspiration
+![Hoodie Globe Screenshot](https://janarosmonaliev.github.io/github-globe/src/files/github-globe-banner.png)
 
-This project was inspired by [Github's homepage](https://github.com/home), where they display real-time Github activity on a globe map.
+## ✨ Concept
 
-## Implementation
+1. Customer buys a hoodie with a **printed message** from a previous buyer
+2. They scan the **QR code** on the tag
+3. This opens the **Hoodie Globe** page
+4. They type their message and click **Send**
+5. Watch it **travel across the globe** via arc animation
+6. That message gets **printed on the NEXT hoodie**
 
-The globe is constructed with [three-globe](https://github.com/vasturiano/three-globe), a ThreeJS data-visualization project made by [@vasturiano](https://github.com/vasturiano). Then, the scene is shaded with a dim ambient light and multiple directional lights to resemble a dreamy space environment. The globe's `MeshPhongMaterial` is also adjusted to fit the environment.
+> Each hoodie becomes a vessel carrying a stranger's positive note across the world.
 
-## [Live demo](https://janarosmonaliev.github.io/github-globe/)
-
-All my attended/cancelled flights (2019-2020) are displayed on the globe. If you try to follow one arc, that would be the sequence of my travel destinations. Red arcs are cancelled flights.
-
-## Documentation
-
-Please visit [three-globe](https://github.com/vasturiano/three-globe) for detailed documentation if you want to edit the `Globe` object to add data visualization. Speaking of the Glow, `three-globe` does not let you access the glow mesh object yet, so the default glow was turned off and a separate `three-glow-mesh` is added to the scene instead.
-
-## Usage
-
-This project is bundled with [Webpack](https://webpack.js.org/):
-
-```json
-"build": "webpack --config=webpack.prod.js",
-"build-dev": "webpack --config=webpack.dev.js",
-"start": "webpack serve webpack-dev-server --open --config=webpack.dev.js"
-```
-
-Details:
+## 🚀 Quick Start
 
 ```bash
-npm start        # development build in ./dist
-npm run build    # static production build in ./
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
 ```
 
-## License
+Open [http://localhost:3000](http://localhost:3000)
 
-[MIT](https://choosealicense.com/licenses/mit/)
+## 🛠 Tech Stack
+
+- **Vite** - Lightning-fast bundler
+- **Three.js** - 3D rendering
+- **three-globe** - Globe visualization
+- **Vanilla JS** - No framework overhead
+
+## 🎨 Features
+
+- **3D Globe** with hex polygon landmasses
+- **Animated arcs** showing message travel
+- **Geolocation** to start arcs from user's location
+- **Glassmorphism UI** with sleek input design
+- **Real-time stats** tracking messages sent
+- **Mobile responsive** design
+
+## 📁 Project Structure
+
+```
+hoodie-globe/
+├── index.html          # Entry point with UI
+├── vite.config.js      # Vite configuration
+├── src/
+│   ├── index.js        # Main globe + message logic
+│   └── files/
+│       ├── globe-data-min.json  # Country polygons
+│       └── ...
+└── package.json
+```
+
+## 🔮 Future Enhancements
+
+- [ ] Database integration (Supabase/Firebase)
+- [ ] Message queue for print order
+- [ ] QR code generation per hoodie
+- [ ] Admin panel for message approval
+- [ ] Analytics dashboard
+
+## 🙏 Credits
+
+Based on [GitHub Globe](https://github.com/janarosmonaliev/github-globe) by [@janarosmonaliev](https://github.com/janarosmonaliev).
+
+Globe rendering powered by [three-globe](https://github.com/vasturiano/three-globe) by [@vasturiano](https://github.com/vasturiano).
+
+## 📄 License
+
+MIT
