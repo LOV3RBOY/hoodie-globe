@@ -26,8 +26,36 @@ let Globe;
 let messagesSent = 0;
 let messagesInTransit = 0;
 let currentArcs = [];
-let landedMessages = []; // Messages that have landed and are clickable
-let userLocation = { lat: 40.7128, lng: -74.0060 }; // Default NYC
+let landedMessages = [];
+let userLocation = { lat: 40.7128, lng: -74.0060 };
+
+// ═══════════════════════════════════════════
+// AWWWARDS-TIER COLOR PALETTE
+// Inspired by Cosmos Studio - Pure monochrome
+// ═══════════════════════════════════════════
+
+const COLORS = {
+  // Pure black canvas
+  background: 0x000000,
+
+  // Globe - deep charcoal with subtle warm undertone
+  globeBase: [0.08, 0.08, 0.1],
+  globeEmissive: 0x0a0a0f,
+
+  // Atmosphere - subtle warm white glow
+  atmosphere: "#ffffff",
+
+  // Landmass - refined grays
+  landPrimary: "rgba(255, 255, 255, 0.15)",
+  landHighlight: "rgba(255, 255, 255, 0.35)",
+
+  // Arcs - pure white with varying opacity
+  arcColors: [
+    '#ffffff',
+    '#e0e0e0',
+    '#c0c0c0',
+  ],
+};
 
 // ═══════════════════════════════════════════
 // INITIALIZATION
@@ -40,75 +68,82 @@ initTooltip();
 onWindowResize();
 animate();
 
-// Get user's real location
+// Geolocation
 if ('geolocation' in navigator) {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      console.log('User location:', userLocation);
     },
-    () => console.log('Using default location')
+    () => { }
   );
 }
 
 // ═══════════════════════════════════════════
-// SCENE SETUP - HORIZON VIEW
+// SCENE SETUP - CINEMATIC QUALITY
 // ═══════════════════════════════════════════
 
 function init() {
-  // Renderer
-  renderer = new WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(window.devicePixelRatio);
+  // Maximum quality renderer
+  renderer = new WebGLRenderer({
+    antialias: true,
+    alpha: false,
+    powerPreference: "high-performance",
+    stencil: false,
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(COLORS.background, 1);
   document.body.appendChild(renderer.domElement);
 
   // Scene
   scene = new Scene();
-  scene.add(new AmbientLight(0xbbbbbb, 0.3));
-  scene.background = new Color(0x040d21);
+  scene.background = new Color(COLORS.background);
 
-  // Camera - positioned above looking down at horizon
-  camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
+  // Subtle ambient
+  scene.add(new AmbientLight(0xffffff, 0.08));
 
-  // HORIZON VIEW: Camera positioned for bottom-of-screen globe view
-  camera.position.set(0, -100, 350);
+  // Camera - centered view
+  camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+  camera.position.set(0, 0, 380);
 
-  // Lighting - creates the purple glow effect
-  const dLight = new DirectionalLight(0xffffff, 0.8);
-  dLight.position.set(-800, 2000, 400);
-  camera.add(dLight);
+  // Key light - soft white from top-left
+  const keyLight = new DirectionalLight(0xffffff, 0.6);
+  keyLight.position.set(-300, 400, 300);
+  camera.add(keyLight);
 
-  const dLight1 = new DirectionalLight(0x7982f6, 1);
-  dLight1.position.set(-200, 500, 200);
-  camera.add(dLight1);
+  // Fill light - very soft from right
+  const fillLight = new DirectionalLight(0xffffff, 0.15);
+  fillLight.position.set(200, 0, 300);
+  camera.add(fillLight);
 
-  const dLight2 = new PointLight(0x8566cc, 0.5);
-  dLight2.position.set(-200, 500, 200);
-  camera.add(dLight2);
+  // Rim light - subtle backlight
+  const rimLight = new DirectionalLight(0xffffff, 0.1);
+  rimLight.position.set(0, 200, -400);
+  camera.add(rimLight);
 
   scene.add(camera);
 
-  // Fog for depth
-  scene.fog = new Fog(0x535ef3, 400, 2000);
+  // Minimal fog
+  scene.fog = new Fog(COLORS.background, 500, 1200);
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dynamicDampingFactor = 0.01;
+  controls.dampingFactor = 0.03;
   controls.enablePan = false;
-  controls.enableZoom = false; // Disable zoom for consistent view
-  controls.rotateSpeed = 0.3;
+  controls.enableZoom = true;
+  controls.minDistance = 280;
+  controls.maxDistance = 550;
+  controls.rotateSpeed = 0.4;
+  controls.zoomSpeed = 0.6;
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.05; // VERY SLOW rotation
+  controls.autoRotateSpeed = 0.15;
 
-  // Lock vertical angle - allow minimal tilt
-  controls.minPolarAngle = Math.PI / 2.2;
-  controls.maxPolarAngle = Math.PI / 1.9;
+  controls.minPolarAngle = Math.PI / 3;
+  controls.maxPolarAngle = Math.PI - Math.PI / 3;
+  controls.target.set(0, 0, 0);
 
-  // Target above center to push globe down in view
-  controls.target.set(0, 100, 0);
-
-  // Raycaster for click detection
+  // Raycaster
   raycaster = new Raycaster();
   mouse = new Vector2();
 
@@ -118,7 +153,7 @@ function init() {
 }
 
 // ═══════════════════════════════════════════
-// GLOBE
+// GLOBE - REFINED MONOCHROME
 // ═══════════════════════════════════════════
 
 function initGlobe() {
@@ -130,24 +165,22 @@ function initGlobe() {
     .hexPolygonResolution(3)
     .hexPolygonMargin(0.7)
     .showAtmosphere(true)
-    .atmosphereColor("#3a228a")
-    .atmosphereAltitude(0.25)
-    .hexPolygonColor(() => "rgba(255,255,255, 0.7)");
+    .atmosphereColor(COLORS.atmosphere)
+    .atmosphereAltitude(0.12)
+    .hexPolygonColor(() => COLORS.landPrimary);
 
-  // Initial rotation
   Globe.rotateY(-Math.PI * (5 / 9));
   Globe.rotateZ(-Math.PI / 6);
 
-  // Globe material - purple gradient
+  // Premium matte globe material
   const globeMaterial = Globe.globeMaterial();
-  globeMaterial.color = new Color(0x3a228a);
-  globeMaterial.emissive = new Color(0x220038);
-  globeMaterial.emissiveIntensity = 0.1;
-  globeMaterial.shininess = 0.7;
+  globeMaterial.color = new Color(...COLORS.globeBase);
+  globeMaterial.emissive = new Color(COLORS.globeEmissive);
+  globeMaterial.emissiveIntensity = 0.05;
+  globeMaterial.shininess = 0.1;
 
   scene.add(Globe);
 
-  // Initialize with empty arcs
   updateArcs();
   updatePoints();
 }
@@ -157,7 +190,7 @@ function initGlobe() {
 // ═══════════════════════════════════════════
 
 function generateRandomLocation() {
-  const lat = (Math.random() - 0.5) * 160;
+  const lat = (Math.random() - 0.5) * 140;
   const lng = (Math.random() - 0.5) * 360;
   return { lat, lng };
 }
@@ -170,8 +203,8 @@ function createMessageArc(message) {
     startLng: userLocation.lng,
     endLat: endLocation.lat,
     endLng: endLocation.lng,
-    arcAlt: 0.2 + Math.random() * 0.3,
-    color: getArcColor(),
+    arcAlt: 0.12 + Math.random() * 0.18,
+    color: COLORS.arcColors[Math.floor(Math.random() * COLORS.arcColors.length)],
     message: message,
     timestamp: Date.now(),
   };
@@ -183,40 +216,25 @@ function createMessageArc(message) {
   updateStats();
   updateArcs();
 
-  // After arc animation, convert to landed message point
   setTimeout(() => {
     messagesInTransit = Math.max(0, messagesInTransit - 1);
     updateStats();
 
-    // Add to landed messages (clickable points)
     landedMessages.push({
       lat: endLocation.lat,
       lng: endLocation.lng,
       message: message,
       timestamp: Date.now(),
       size: 0.4,
-      color: arc.color,
+      color: '#ffffff',
     });
 
-    // Keep only last 50 landed messages
     if (landedMessages.length > 50) {
       landedMessages = landedMessages.slice(-50);
     }
 
     updatePoints();
-  }, 4000);
-}
-
-function getArcColor() {
-  const colors = [
-    '#ff00ff', // Magenta
-    '#00ffff', // Cyan
-    '#ff6b6b', // Coral
-    '#9cff00', // Lime
-    '#ffcb21', // Gold
-    '#7982f6', // Purple
-  ];
-  return colors[Math.floor(Math.random() * colors.length)];
+  }, 3000);
 }
 
 function updateArcs() {
@@ -224,11 +242,11 @@ function updateArcs() {
     .arcsData(currentArcs)
     .arcColor('color')
     .arcAltitude('arcAlt')
-    .arcStroke(0.5)
+    .arcStroke(0.4)
     .arcDashLength(0.9)
     .arcDashGap(4)
-    .arcDashAnimateTime(2500)
-    .arcsTransitionDuration(500);
+    .arcDashAnimateTime(1800)
+    .arcsTransitionDuration(400);
 }
 
 function updatePoints() {
@@ -239,43 +257,32 @@ function updatePoints() {
     .pointColor('color')
     .pointAltitude(0.01)
     .pointRadius('size')
-    .pointsMerge(false); // Keep separate for click detection
+    .pointsMerge(false);
 }
 
 // ═══════════════════════════════════════════
-// TOOLTIP FOR MESSAGES
+// TOOLTIP
 // ═══════════════════════════════════════════
 
 function initTooltip() {
-  // Create tooltip element
   const tooltip = document.createElement('div');
   tooltip.id = 'message-tooltip';
-  tooltip.innerHTML = `
-    <div class="tooltip-content">
-      <p class="tooltip-message"></p>
-    </div>
-  `;
+  tooltip.innerHTML = `<div class="tooltip-content"><p class="tooltip-message"></p></div>`;
   document.body.appendChild(tooltip);
 }
 
 function showTooltip(message, x, y) {
   const tooltip = document.getElementById('message-tooltip');
   const messageEl = tooltip.querySelector('.tooltip-message');
-
   messageEl.textContent = `"${message}"`;
   tooltip.style.left = `${x}px`;
   tooltip.style.top = `${y}px`;
   tooltip.classList.add('visible');
-
-  // Auto-hide after 3 seconds
-  setTimeout(() => {
-    hideTooltip();
-  }, 3000);
+  setTimeout(() => hideTooltip(), 3500);
 }
 
 function hideTooltip() {
-  const tooltip = document.getElementById('message-tooltip');
-  tooltip.classList.remove('visible');
+  document.getElementById('message-tooltip').classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════
@@ -283,35 +290,25 @@ function hideTooltip() {
 // ═══════════════════════════════════════════
 
 function onGlobeClick(event) {
-  // Calculate mouse position in normalized device coordinates
   const rect = renderer.domElement.getBoundingClientRect();
   mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
-  // Update raycaster
   raycaster.setFromCamera(mouse, camera);
-
-  // Check intersections with globe
   const intersects = raycaster.intersectObject(Globe, true);
 
   if (intersects.length > 0) {
     const point = intersects[0].point;
-
-    // Convert 3D point to lat/lng (approximate)
-    const globeRadius = 100; // Default three-globe radius
+    const globeRadius = 100;
     const lat = Math.asin(point.y / globeRadius) * (180 / Math.PI);
     const lng = Math.atan2(point.x, point.z) * (180 / Math.PI);
 
-    // Find closest landed message
     let closestMessage = null;
     let closestDist = Infinity;
 
     landedMessages.forEach(msg => {
-      const dist = Math.sqrt(
-        Math.pow(msg.lat - lat, 2) +
-        Math.pow(msg.lng - lng, 2)
-      );
-      if (dist < closestDist && dist < 15) { // 15 degree tolerance
+      const dist = Math.sqrt(Math.pow(msg.lat - lat, 2) + Math.pow(msg.lng - lng, 2));
+      if (dist < closestDist && dist < 20) {
         closestDist = dist;
         closestMessage = msg;
       }
@@ -333,10 +330,7 @@ function initMessageUI() {
 
   if (!input || !sendBtn) return;
 
-  // Send button click
   sendBtn.addEventListener('click', () => sendMessage());
-
-  // Enter key
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -344,8 +338,7 @@ function initMessageUI() {
     }
   });
 
-  // Focus input after a delay
-  setTimeout(() => input.focus(), 1500);
+  setTimeout(() => input.focus(), 1000);
 }
 
 function sendMessage() {
@@ -356,46 +349,29 @@ function sendMessage() {
 
   let message = input.value.trim();
 
-  // Use random positive message if empty
   if (!message) {
-    const defaults = [
-      "You are enough ✨",
-      "Sending love your way",
-      "You've got this!",
-      "Believe in yourself",
-      "You make the world better",
-      "Keep shining ⭐",
-    ];
+    const defaults = ["You are enough", "Sending love", "You've got this", "Keep going", "You matter"];
     message = defaults[Math.floor(Math.random() * defaults.length)];
   }
 
-  // Disable button temporarily
   sendBtn.disabled = true;
-  sendBtn.textContent = 'Sending...';
+  sendBtn.textContent = '...';
 
-  // Create the arc animation
   createMessageArc(message);
-
-  // Clear input
   input.value = '';
 
-  // Success feedback
   setTimeout(() => {
-    sendBtn.classList.add('success');
-    sendBtn.textContent = 'Sent!';
-
+    sendBtn.textContent = '✓';
     setTimeout(() => {
-      sendBtn.classList.remove('success');
-      sendBtn.textContent = 'Send';
+      sendBtn.textContent = '→';
       sendBtn.disabled = false;
-    }, 1500);
-  }, 500);
+    }, 1200);
+  }, 400);
 }
 
 function updateStats() {
   const sentEl = document.getElementById('stat-sent');
   const transitEl = document.getElementById('stat-transit');
-
   if (sentEl) sentEl.textContent = messagesSent;
   if (transitEl) transitEl.textContent = messagesInTransit;
 }
@@ -412,22 +388,16 @@ function onMouseMove(event) {
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  windowHalfX = window.innerWidth / 1.5;
-  windowHalfY = window.innerHeight / 1.5;
+  windowHalfX = window.innerWidth / 2;
+  windowHalfY = window.innerHeight / 2;
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 // ═══════════════════════════════════════════
-// ANIMATION LOOP
+// ANIMATION
 // ═══════════════════════════════════════════
 
 function animate() {
-  // Subtle mouse parallax (reduced for horizon view)
-  camera.position.x +=
-    Math.abs(mouseX) <= windowHalfX / 2
-      ? (mouseX / 4 - camera.position.x) * 0.002
-      : 0;
-
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);

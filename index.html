@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hoodie Globe - Send Your Message to the World</title>
-  <meta name="description" content="Send a positive message to someone on the other side of the world.">
+  <title>Hoodie Globe</title>
+  <meta name="description" content="Send a message to the world.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -17,15 +17,18 @@
     }
 
     :root {
-      --bg-void: #040d21;
-      --surface: rgba(0, 0, 0, 0.4);
-      --border: rgba(255, 255, 255, 0.08);
-      --border-hover: rgba(255, 255, 255, 0.15);
-      --text-primary: rgba(255, 255, 255, 0.92);
-      --text-muted: rgba(255, 255, 255, 0.4);
-      --accent: #ff00ff;
-      --accent-soft: rgba(255, 0, 255, 0.2);
-      --success: #9cff00;
+      /* Monochrome Palette - Cosmos Studio Inspired */
+      --black: #000000;
+      --white: #ffffff;
+      --gray-100: rgba(255, 255, 255, 0.08);
+      --gray-200: rgba(255, 255, 255, 0.12);
+      --gray-300: rgba(255, 255, 255, 0.20);
+      --gray-400: rgba(255, 255, 255, 0.35);
+      --gray-500: rgba(255, 255, 255, 0.50);
+      --gray-600: rgba(255, 255, 255, 0.70);
+      --gray-700: rgba(255, 255, 255, 0.90);
+
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     html,
@@ -33,128 +36,26 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: var(--bg-void);
-      font-family: 'Inter', -apple-system, sans-serif;
-      color: var(--text-primary);
+      background: var(--black);
+      font-family: var(--font);
+      color: var(--white);
+      -webkit-font-smoothing: antialiased;
     }
 
     canvas {
       display: block;
     }
 
-    /* Message UI Overlay */
-    #message-ui {
-      position: fixed;
-      bottom: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 100;
-      width: 100%;
-      max-width: 560px;
-      padding: 0 24px;
-    }
+    /* ═══════════════════════════════════════════
+       HEADER - Minimal
+       ═══════════════════════════════════════════ */
 
-    .message-container {
-      background: var(--surface);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--border);
-      border-radius: 60px;
-      padding: 8px 8px 8px 28px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      transition: border-color 0.4s ease, box-shadow 0.4s ease;
-    }
-
-    .message-container:focus-within {
-      border-color: var(--border-hover);
-      box-shadow: 0 0 60px rgba(255, 0, 255, 0.1);
-    }
-
-    .message-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 12px var(--accent);
-      flex-shrink: 0;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-
-      50% {
-        opacity: 0.6;
-        transform: scale(0.9);
-      }
-    }
-
-    .message-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text-primary);
-      font-size: 15px;
-      font-weight: 400;
-      letter-spacing: 0.01em;
-    }
-
-    .message-input::placeholder {
-      color: var(--text-muted);
-    }
-
-    .send-btn {
-      background: linear-gradient(135deg, rgba(255, 0, 255, 0.3) 0%, rgba(100, 50, 200, 0.3) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 50px;
-      padding: 14px 28px;
-      color: var(--text-primary);
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      flex-shrink: 0;
-    }
-
-    .send-btn:hover {
-      background: linear-gradient(135deg, rgba(255, 0, 255, 0.5) 0%, rgba(100, 50, 200, 0.5) 100%);
-      border-color: rgba(255, 255, 255, 0.25);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(255, 0, 255, 0.3);
-    }
-
-    .send-btn:active {
-      transform: translateY(0);
-    }
-
-    .send-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .send-btn.success {
-      background: linear-gradient(135deg, rgba(156, 255, 0, 0.4) 0%, rgba(100, 200, 50, 0.4) 100%);
-      border-color: rgba(156, 255, 0, 0.3);
-    }
-
-    /* Header */
     #header {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      padding: 24px 32px;
+      padding: 32px 40px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -162,36 +63,124 @@
     }
 
     .brand {
-      font-size: 14px;
-      font-weight: 400;
-      letter-spacing: 0.02em;
-      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gray-500);
     }
 
     .status {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--success);
-      animation: pulse 2s ease-in-out infinite;
+      background: var(--gray-500);
+      animation: pulse 3s ease-in-out infinite;
     }
 
-    /* Stats */
+    .status-text {
+      font-size: 10px;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    /* ═══════════════════════════════════════════
+       INPUT - Ultra Minimal
+       ═══════════════════════════════════════════ */
+
+    #message-ui {
+      position: fixed;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+    }
+
+    .input-container {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid var(--gray-200);
+      border-radius: 2px;
+      background: transparent;
+      transition: border-color 0.3s ease;
+    }
+
+    .input-container:hover {
+      border-color: var(--gray-300);
+    }
+
+    .input-container:focus-within {
+      border-color: var(--gray-400);
+    }
+
+    .message-input {
+      width: 280px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--gray-700);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      padding: 14px 16px;
+    }
+
+    .message-input::placeholder {
+      color: var(--gray-400);
+    }
+
+    .send-btn {
+      background: transparent;
+      border: none;
+      border-left: 1px solid var(--gray-200);
+      color: var(--gray-500);
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 14px 18px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .send-btn:hover {
+      color: var(--gray-700);
+      background: var(--gray-100);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    /* ═══════════════════════════════════════════
+       STATS - Bottom Right
+       ═══════════════════════════════════════════ */
+
     #stats {
       position: fixed;
-      bottom: 60px;
-      right: 32px;
+      bottom: 48px;
+      right: 40px;
       text-align: right;
       z-index: 100;
     }
@@ -200,34 +189,36 @@
       display: flex;
       align-items: baseline;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 12px;
       margin-bottom: 4px;
     }
 
     .stat-label {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.08em;
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--text-muted);
+      color: var(--gray-400);
     }
 
     .stat-value {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 500;
-      color: var(--text-primary);
+      color: var(--gray-600);
       font-variant-numeric: tabular-nums;
     }
 
-    /* Message Tooltip - Sleek & Minimal */
+    /* ═══════════════════════════════════════════
+       TOOLTIP
+       ═══════════════════════════════════════════ */
+
     #message-tooltip {
       position: fixed;
       z-index: 200;
       pointer-events: none;
       transform: translate(-50%, -100%);
       opacity: 0;
-      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
-        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
     #message-tooltip.visible {
@@ -236,66 +227,64 @@
     }
 
     .tooltip-content {
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
+      background: var(--black);
+      border: 1px solid var(--gray-200);
       padding: 16px 20px;
-      max-width: 280px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      max-width: 260px;
     }
 
     .tooltip-message {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 400;
-      line-height: 1.5;
-      color: var(--text-primary);
+      line-height: 1.6;
+      color: var(--gray-600);
       font-style: italic;
-      text-align: center;
     }
 
-    /* Click hint */
-    .click-hint {
+    /* ═══════════════════════════════════════════
+       HINT
+       ═══════════════════════════════════════════ */
+
+    .hint {
       position: fixed;
-      bottom: 140px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 11px;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
+      bottom: 48px;
+      left: 40px;
+      font-size: 9px;
+      font-weight: 400;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
+      color: var(--gray-300);
       opacity: 0;
-      animation: fadeInHint 1s ease 3s forwards;
+      animation: fadeIn 1s ease 4s forwards;
     }
 
-    @keyframes fadeInHint {
+    @keyframes fadeIn {
       to {
         opacity: 1;
       }
     }
 
-    /* Responsive */
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════ */
+
     @media (max-width: 640px) {
-      #message-ui {
-        bottom: 40px;
-        padding: 0 16px;
+      #header {
+        padding: 24px 24px;
       }
 
-      .message-container {
-        padding: 6px 6px 6px 20px;
+      .message-input {
+        width: 200px;
+        font-size: 12px;
+        padding: 12px 14px;
       }
 
       .send-btn {
-        padding: 12px 20px;
-        font-size: 12px;
+        padding: 12px 14px;
       }
 
-      #stats {
-        display: none;
-      }
-
-      .click-hint {
+      #stats,
+      .hint {
         display: none;
       }
     }
@@ -308,36 +297,34 @@
     <div class="brand">Hoodie Globe</div>
     <div class="status">
       <span class="status-dot"></span>
-      <span>Live</span>
+      <span class="status-text">Live</span>
     </div>
   </header>
 
   <!-- Stats -->
   <div id="stats">
     <div class="stat-row">
-      <span class="stat-label">Messages Sent</span>
+      <span class="stat-label">Sent</span>
       <span class="stat-value" id="stat-sent">0</span>
     </div>
     <div class="stat-row">
-      <span class="stat-label">In Transit</span>
+      <span class="stat-label">In Flight</span>
       <span class="stat-value" id="stat-transit">0</span>
     </div>
   </div>
 
-  <!-- Click Hint -->
-  <p class="click-hint">Click on glowing points to read messages</p>
+  <!-- Hint -->
+  <p class="hint">Click points to read</p>
 
-  <!-- Message Input -->
+  <!-- Input -->
   <div id="message-ui">
-    <div class="message-container">
-      <div class="message-indicator"></div>
-      <input type="text" class="message-input" id="message-input" placeholder="Write a message..." maxlength="100"
-        autocomplete="off">
-      <button class="send-btn" id="send-btn">Send</button>
+    <div class="input-container">
+      <input type="text" class="message-input" id="message-input" placeholder="Write a message..." maxlength="80"
+        autocomplete="off" spellcheck="false">
+      <button class="send-btn" id="send-btn">→</button>
     </div>
   </div>
 
-  <!-- Three.js Globe -->
   <script type="module" src="/src/index.js"></script>
 </body>
 
