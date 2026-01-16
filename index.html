@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hoodie Globe - Send Your Message to the World</title>
-  <meta name="description" content="Send a positive message to someone on the other side of the world. Your words become someone else's hoodie.">
+  <meta name="description" content="Send a positive message to someone on the other side of the world.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -27,7 +28,8 @@
       --success: #9cff00;
     }
 
-    html, body {
+    html,
+    body {
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -81,8 +83,17 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(0.9); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.6;
+        transform: scale(0.9);
+      }
     }
 
     .message-input {
@@ -135,15 +146,6 @@
     .send-btn.success {
       background: linear-gradient(135deg, rgba(156, 255, 0, 0.4) 0%, rgba(100, 200, 50, 0.4) 100%);
       border-color: rgba(156, 255, 0, 0.3);
-    }
-
-    /* Helper text */
-    .helper-text {
-      text-align: center;
-      margin-top: 16px;
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.02em;
     }
 
     /* Header */
@@ -217,18 +219,60 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* Loading state */
-    .loader {
-      width: 16px;
-      height: 16px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    /* Message Tooltip - Sleek & Minimal */
+    #message-tooltip {
+      position: fixed;
+      z-index: 200;
+      pointer-events: none;
+      transform: translate(-50%, -100%);
+      opacity: 0;
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    #message-tooltip.visible {
+      opacity: 1;
+      transform: translate(-50%, calc(-100% - 16px));
+    }
+
+    .tooltip-content {
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px 20px;
+      max-width: 280px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .tooltip-message {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--text-primary);
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* Click hint */
+    .click-hint {
+      position: fixed;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeInHint 1s ease 3s forwards;
+    }
+
+    @keyframes fadeInHint {
+      to {
+        opacity: 1;
+      }
     }
 
     /* Responsive */
@@ -250,9 +294,14 @@
       #stats {
         display: none;
       }
+
+      .click-hint {
+        display: none;
+      }
     }
   </style>
 </head>
+
 <body>
   <!-- Header -->
   <header id="header">
@@ -275,24 +324,21 @@
     </div>
   </div>
 
+  <!-- Click Hint -->
+  <p class="click-hint">Click on glowing points to read messages</p>
+
   <!-- Message Input -->
   <div id="message-ui">
     <div class="message-container">
       <div class="message-indicator"></div>
-      <input 
-        type="text" 
-        class="message-input" 
-        id="message-input"
-        placeholder="Write a message for someone's hoodie..."
-        maxlength="100"
-        autocomplete="off"
-      >
+      <input type="text" class="message-input" id="message-input" placeholder="Write a message..." maxlength="100"
+        autocomplete="off">
       <button class="send-btn" id="send-btn">Send</button>
     </div>
-    <p class="helper-text">Your message will travel the globe and be printed on someone's hoodie</p>
   </div>
 
   <!-- Three.js Globe -->
   <script type="module" src="/src/index.js"></script>
 </body>
+
 </html>

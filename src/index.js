@@ -1,5 +1,5 @@
 import ThreeGlobe from "three-globe";
-import { WebGLRenderer, Scene } from "three";
+import { WebGLRenderer, Scene, Raycaster, Vector2 } from "three";
 import {
   PerspectiveCamera,
   AmbientLight,
@@ -15,7 +15,7 @@ import countries from "./files/globe-data-min.json";
 // STATE
 // ═══════════════════════════════════════════
 
-let renderer, camera, scene, controls;
+let renderer, camera, scene, controls, raycaster, mouse;
 let mouseX = 0;
 let mouseY = 0;
 let windowHalfX = window.innerWidth / 2;
@@ -26,6 +26,7 @@ let Globe;
 let messagesSent = 0;
 let messagesInTransit = 0;
 let currentArcs = [];
+let landedMessages = []; // Messages that have landed and are clickable
 let userLocation = { lat: 40.7128, lng: -74.0060 }; // Default NYC
 
 // ═══════════════════════════════════════════
@@ -35,6 +36,7 @@ let userLocation = { lat: 40.7128, lng: -74.0060 }; // Default NYC
 init();
 initGlobe();
 initMessageUI();
+initTooltip();
 onWindowResize();
 animate();
 
@@ -50,7 +52,7 @@ if ('geolocation' in navigator) {
 }
 
 // ═══════════════════════════════════════════
-// SCENE SETUP
+// SCENE SETUP - HORIZON VIEW
 // ═══════════════════════════════════════════
 
 function init() {
@@ -65,10 +67,11 @@ function init() {
   scene.add(new AmbientLight(0xbbbbbb, 0.3));
   scene.background = new Color(0x040d21);
 
-  // Camera
-  camera = new PerspectiveCamera();
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  // Camera - positioned above looking down at horizon
+  camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
+
+  // HORIZON VIEW: Camera positioned for bottom-of-screen globe view
+  camera.position.set(0, -100, 350);
 
   // Lighting - creates the purple glow effect
   const dLight = new DirectionalLight(0xffffff, 0.8);
@@ -83,10 +86,6 @@ function init() {
   dLight2.position.set(-200, 500, 200);
   camera.add(dLight2);
 
-  camera.position.z = 400;
-  camera.position.x = 0;
-  camera.position.y = 0;
-
   scene.add(camera);
 
   // Fog for depth
@@ -97,18 +96,25 @@ function init() {
   controls.enableDamping = true;
   controls.dynamicDampingFactor = 0.01;
   controls.enablePan = false;
-  controls.minDistance = 200;
-  controls.maxDistance = 500;
-  controls.rotateSpeed = 0.8;
-  controls.zoomSpeed = 1;
+  controls.enableZoom = false; // Disable zoom for consistent view
+  controls.rotateSpeed = 0.3;
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.3;
+  controls.autoRotateSpeed = 0.05; // VERY SLOW rotation
 
-  controls.minPolarAngle = Math.PI / 3.5;
-  controls.maxPolarAngle = Math.PI - Math.PI / 3;
+  // Lock vertical angle - allow minimal tilt
+  controls.minPolarAngle = Math.PI / 2.2;
+  controls.maxPolarAngle = Math.PI / 1.9;
+
+  // Target above center to push globe down in view
+  controls.target.set(0, 100, 0);
+
+  // Raycaster for click detection
+  raycaster = new Raycaster();
+  mouse = new Vector2();
 
   window.addEventListener("resize", onWindowResize, false);
   document.addEventListener("mousemove", onMouseMove);
+  renderer.domElement.addEventListener("click", onGlobeClick);
 }
 
 // ═══════════════════════════════════════════
@@ -143,6 +149,7 @@ function initGlobe() {
 
   // Initialize with empty arcs
   updateArcs();
+  updatePoints();
 }
 
 // ═══════════════════════════════════════════
@@ -150,9 +157,8 @@ function initGlobe() {
 // ═══════════════════════════════════════════
 
 function generateRandomLocation() {
-  // Generate random coordinates on Earth
-  const lat = (Math.random() - 0.5) * 160; // -80 to 80
-  const lng = (Math.random() - 0.5) * 360; // -180 to 180
+  const lat = (Math.random() - 0.5) * 160;
+  const lng = (Math.random() - 0.5) * 360;
   return { lat, lng };
 }
 
@@ -177,14 +183,27 @@ function createMessageArc(message) {
   updateStats();
   updateArcs();
 
-  // Remove arc after animation completes
+  // After arc animation, convert to landed message point
   setTimeout(() => {
     messagesInTransit = Math.max(0, messagesInTransit - 1);
     updateStats();
 
-    // Keep arc visible but could remove if needed
-    // currentArcs = currentArcs.filter(a => a.timestamp !== arc.timestamp);
-    // updateArcs();
+    // Add to landed messages (clickable points)
+    landedMessages.push({
+      lat: endLocation.lat,
+      lng: endLocation.lng,
+      message: message,
+      timestamp: Date.now(),
+      size: 0.4,
+      color: arc.color,
+    });
+
+    // Keep only last 50 landed messages
+    if (landedMessages.length > 50) {
+      landedMessages = landedMessages.slice(-50);
+    }
+
+    updatePoints();
   }, 4000);
 }
 
@@ -210,6 +229,98 @@ function updateArcs() {
     .arcDashGap(4)
     .arcDashAnimateTime(2500)
     .arcsTransitionDuration(500);
+}
+
+function updatePoints() {
+  Globe
+    .pointsData(landedMessages)
+    .pointLat('lat')
+    .pointLng('lng')
+    .pointColor('color')
+    .pointAltitude(0.01)
+    .pointRadius('size')
+    .pointsMerge(false); // Keep separate for click detection
+}
+
+// ═══════════════════════════════════════════
+// TOOLTIP FOR MESSAGES
+// ═══════════════════════════════════════════
+
+function initTooltip() {
+  // Create tooltip element
+  const tooltip = document.createElement('div');
+  tooltip.id = 'message-tooltip';
+  tooltip.innerHTML = `
+    <div class="tooltip-content">
+      <p class="tooltip-message"></p>
+    </div>
+  `;
+  document.body.appendChild(tooltip);
+}
+
+function showTooltip(message, x, y) {
+  const tooltip = document.getElementById('message-tooltip');
+  const messageEl = tooltip.querySelector('.tooltip-message');
+
+  messageEl.textContent = `"${message}"`;
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${y}px`;
+  tooltip.classList.add('visible');
+
+  // Auto-hide after 3 seconds
+  setTimeout(() => {
+    hideTooltip();
+  }, 3000);
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById('message-tooltip');
+  tooltip.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════
+// CLICK DETECTION
+// ═══════════════════════════════════════════
+
+function onGlobeClick(event) {
+  // Calculate mouse position in normalized device coordinates
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+  // Update raycaster
+  raycaster.setFromCamera(mouse, camera);
+
+  // Check intersections with globe
+  const intersects = raycaster.intersectObject(Globe, true);
+
+  if (intersects.length > 0) {
+    const point = intersects[0].point;
+
+    // Convert 3D point to lat/lng (approximate)
+    const globeRadius = 100; // Default three-globe radius
+    const lat = Math.asin(point.y / globeRadius) * (180 / Math.PI);
+    const lng = Math.atan2(point.x, point.z) * (180 / Math.PI);
+
+    // Find closest landed message
+    let closestMessage = null;
+    let closestDist = Infinity;
+
+    landedMessages.forEach(msg => {
+      const dist = Math.sqrt(
+        Math.pow(msg.lat - lat, 2) +
+        Math.pow(msg.lng - lng, 2)
+      );
+      if (dist < closestDist && dist < 15) { // 15 degree tolerance
+        closestDist = dist;
+        closestMessage = msg;
+      }
+    });
+
+    if (closestMessage) {
+      showTooltip(closestMessage.message, event.clientX, event.clientY);
+    }
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -311,14 +422,12 @@ function onWindowResize() {
 // ═══════════════════════════════════════════
 
 function animate() {
-  // Subtle mouse parallax
+  // Subtle mouse parallax (reduced for horizon view)
   camera.position.x +=
     Math.abs(mouseX) <= windowHalfX / 2
-      ? (mouseX / 2 - camera.position.x) * 0.005
+      ? (mouseX / 4 - camera.position.x) * 0.002
       : 0;
-  camera.position.y += (-mouseY / 2 - camera.position.y) * 0.005;
 
-  camera.lookAt(scene.position);
   controls.update();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
