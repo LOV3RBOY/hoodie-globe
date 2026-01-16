@@ -10,107 +10,123 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
-    * {
+    *,
+    *::before,
+    *::after {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
     :root {
-      /* Monochrome Palette - Cosmos Studio Inspired */
+      /* Flagship Neutral Palette */
       --black: #000000;
-      --white: #ffffff;
-      --gray-100: rgba(255, 255, 255, 0.08);
-      --gray-200: rgba(255, 255, 255, 0.12);
-      --gray-300: rgba(255, 255, 255, 0.20);
-      --gray-400: rgba(255, 255, 255, 0.35);
-      --gray-500: rgba(255, 255, 255, 0.50);
-      --gray-600: rgba(255, 255, 255, 0.70);
-      --gray-700: rgba(255, 255, 255, 0.90);
+      --gray-50: rgba(255, 255, 255, 0.03);
+      --gray-100: rgba(255, 255, 255, 0.06);
+      --gray-200: rgba(255, 255, 255, 0.10);
+      --gray-300: rgba(255, 255, 255, 0.18);
+      --gray-400: rgba(255, 255, 255, 0.28);
+      --gray-500: rgba(255, 255, 255, 0.42);
+      --gray-600: rgba(255, 255, 255, 0.58);
+      --gray-700: rgba(255, 255, 255, 0.76);
+      --gray-800: rgba(255, 255, 255, 0.88);
 
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      /* Typography */
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --tracking-wide: 0.08em;
+      --tracking-tight: -0.01em;
     }
 
-    html,
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
     body {
       width: 100%;
-      height: 100%;
+      height: 100vh;
       overflow: hidden;
       background: var(--black);
       font-family: var(--font);
-      color: var(--white);
-      -webkit-font-smoothing: antialiased;
+      color: var(--gray-700);
     }
 
     canvas {
       display: block;
+      position: fixed;
+      inset: 0;
     }
 
     /* ═══════════════════════════════════════════
-       HEADER - Minimal
+       HEADER
        ═══════════════════════════════════════════ */
 
-    #header {
+    .header {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      padding: 32px 40px;
+      padding: 28px 36px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       z-index: 100;
+      pointer-events: none;
     }
 
     .brand {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 500;
-      letter-spacing: 0.15em;
+      letter-spacing: var(--tracking-wide);
       text-transform: uppercase;
-      color: var(--gray-500);
+      color: var(--gray-400);
     }
 
     .status {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
-    .status-dot {
-      width: 6px;
-      height: 6px;
+    .status-indicator {
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
-      background: var(--gray-500);
-      animation: pulse 3s ease-in-out infinite;
+      background: var(--gray-400);
+      animation: breathe 4s ease-in-out infinite;
     }
 
-    .status-text {
-      font-size: 10px;
+    .status-label {
+      font-size: 9px;
       font-weight: 400;
-      letter-spacing: 0.12em;
+      letter-spacing: var(--tracking-wide);
       text-transform: uppercase;
-      color: var(--gray-400);
+      color: var(--gray-300);
     }
 
-    @keyframes pulse {
+    @keyframes breathe {
 
       0%,
       100% {
         opacity: 1;
+        transform: scale(1);
       }
 
       50% {
-        opacity: 0.3;
+        opacity: 0.4;
+        transform: scale(0.9);
       }
     }
 
     /* ═══════════════════════════════════════════
-       INPUT - Ultra Minimal
+       INPUT - Clean modern sans
        ═══════════════════════════════════════════ */
 
-    #message-ui {
+    .input-wrapper {
       position: fixed;
-      bottom: 48px;
+      bottom: 40px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 100;
@@ -118,12 +134,10 @@
 
     .input-container {
       display: flex;
-      align-items: center;
-      gap: 0;
+      align-items: stretch;
       border: 1px solid var(--gray-200);
-      border-radius: 2px;
       background: transparent;
-      transition: border-color 0.3s ease;
+      transition: border-color 0.25s ease;
     }
 
     .input-container:hover {
@@ -135,20 +149,21 @@
     }
 
     .message-input {
-      width: 280px;
+      width: 260px;
       background: transparent;
       border: none;
       outline: none;
       color: var(--gray-700);
       font-family: var(--font);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 400;
-      letter-spacing: 0.02em;
-      padding: 14px 16px;
+      letter-spacing: 0.01em;
+      padding: 13px 16px;
     }
 
     .message-input::placeholder {
       color: var(--gray-400);
+      font-weight: 300;
     }
 
     .send-btn {
@@ -157,55 +172,62 @@
       border-left: 1px solid var(--gray-200);
       color: var(--gray-500);
       font-family: var(--font);
-      font-size: 14px;
-      padding: 14px 18px;
+      font-size: 13px;
+      padding: 13px 16px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
     }
 
     .send-btn:hover {
       color: var(--gray-700);
+      background: var(--gray-50);
+    }
+
+    .send-btn:active {
       background: var(--gray-100);
     }
 
     .send-btn:disabled {
-      opacity: 0.4;
+      opacity: 0.5;
       cursor: default;
     }
 
     /* ═══════════════════════════════════════════
-       STATS - Bottom Right
+       STATS
        ═══════════════════════════════════════════ */
 
-    #stats {
+    .stats {
       position: fixed;
-      bottom: 48px;
-      right: 40px;
+      bottom: 40px;
+      right: 36px;
       text-align: right;
       z-index: 100;
+      pointer-events: none;
     }
 
-    .stat-row {
+    .stat {
       display: flex;
       align-items: baseline;
       justify-content: flex-end;
-      gap: 12px;
-      margin-bottom: 4px;
+      gap: 10px;
+      margin-bottom: 3px;
     }
 
     .stat-label {
       font-size: 9px;
       font-weight: 400;
-      letter-spacing: 0.15em;
+      letter-spacing: var(--tracking-wide);
       text-transform: uppercase;
-      color: var(--gray-400);
+      color: var(--gray-300);
     }
 
     .stat-value {
       font-size: 11px;
       font-weight: 500;
-      color: var(--gray-600);
+      color: var(--gray-500);
       font-variant-numeric: tabular-nums;
+      min-width: 12px;
+      text-align: right;
     }
 
     /* ═══════════════════════════════════════════
@@ -218,27 +240,28 @@
       pointer-events: none;
       transform: translate(-50%, -100%);
       opacity: 0;
-      transition: opacity 0.4s ease, transform 0.4s ease;
+      transition: opacity 0.3s ease, transform 0.3s ease;
     }
 
     #message-tooltip.visible {
       opacity: 1;
-      transform: translate(-50%, calc(-100% - 16px));
+      transform: translate(-50%, calc(-100% - 12px));
     }
 
     .tooltip-content {
       background: var(--black);
       border: 1px solid var(--gray-200);
-      padding: 16px 20px;
-      max-width: 260px;
+      padding: 14px 18px;
+      max-width: 240px;
     }
 
     .tooltip-message {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 400;
-      line-height: 1.6;
+      line-height: 1.55;
       color: var(--gray-600);
       font-style: italic;
+      letter-spacing: var(--tracking-tight);
     }
 
     /* ═══════════════════════════════════════════
@@ -247,15 +270,16 @@
 
     .hint {
       position: fixed;
-      bottom: 48px;
-      left: 40px;
+      bottom: 40px;
+      left: 36px;
       font-size: 9px;
       font-weight: 400;
-      letter-spacing: 0.12em;
+      letter-spacing: var(--tracking-wide);
       text-transform: uppercase;
       color: var(--gray-300);
       opacity: 0;
-      animation: fadeIn 1s ease 4s forwards;
+      animation: fadeIn 0.6s ease 5s forwards;
+      pointer-events: none;
     }
 
     @keyframes fadeIn {
@@ -269,21 +293,22 @@
        ═══════════════════════════════════════════ */
 
     @media (max-width: 640px) {
-      #header {
-        padding: 24px 24px;
+      .header {
+        padding: 20px 20px;
       }
 
       .message-input {
-        width: 200px;
-        font-size: 12px;
-        padding: 12px 14px;
+        width: 180px;
+        font-size: 11px;
+        padding: 11px 12px;
       }
 
       .send-btn {
-        padding: 12px 14px;
+        padding: 11px 12px;
+        font-size: 12px;
       }
 
-      #stats,
+      .stats,
       .hint {
         display: none;
       }
@@ -292,32 +317,28 @@
 </head>
 
 <body>
-  <!-- Header -->
-  <header id="header">
-    <div class="brand">Hoodie Globe</div>
+  <header class="header">
+    <span class="brand">Hoodie Globe</span>
     <div class="status">
-      <span class="status-dot"></span>
-      <span class="status-text">Live</span>
+      <span class="status-indicator"></span>
+      <span class="status-label">Live</span>
     </div>
   </header>
 
-  <!-- Stats -->
-  <div id="stats">
-    <div class="stat-row">
+  <div class="stats">
+    <div class="stat">
       <span class="stat-label">Sent</span>
       <span class="stat-value" id="stat-sent">0</span>
     </div>
-    <div class="stat-row">
+    <div class="stat">
       <span class="stat-label">In Flight</span>
       <span class="stat-value" id="stat-transit">0</span>
     </div>
   </div>
 
-  <!-- Hint -->
   <p class="hint">Click points to read</p>
 
-  <!-- Input -->
-  <div id="message-ui">
+  <div class="input-wrapper">
     <div class="input-container">
       <input type="text" class="message-input" id="message-input" placeholder="Write a message..." maxlength="80"
         autocomplete="off" spellcheck="false">

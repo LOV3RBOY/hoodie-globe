@@ -1,12 +1,21 @@
 import ThreeGlobe from "three-globe";
-import { WebGLRenderer, Scene, Raycaster, Vector2 } from "three";
+import {
+  WebGLRenderer,
+  Scene,
+  Raycaster,
+  Vector2,
+  PCFSoftShadowMap,
+  ACESFilmicToneMapping,
+  SRGBColorSpace,
+} from "three";
 import {
   PerspectiveCamera,
   AmbientLight,
   DirectionalLight,
   Color,
-  Fog,
   PointLight,
+  HemisphereLight,
+  MeshStandardMaterial,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import countries from "./files/globe-data-min.json";
@@ -16,10 +25,6 @@ import countries from "./files/globe-data-min.json";
 // ═══════════════════════════════════════════
 
 let renderer, camera, scene, controls, raycaster, mouse;
-let mouseX = 0;
-let mouseY = 0;
-let windowHalfX = window.innerWidth / 2;
-let windowHalfY = window.innerHeight / 2;
 let Globe;
 
 // Message state
@@ -30,35 +35,31 @@ let landedMessages = [];
 let userLocation = { lat: 40.7128, lng: -74.0060 };
 
 // ═══════════════════════════════════════════
-// AWWWARDS-TIER COLOR PALETTE
-// Inspired by Cosmos Studio - Pure monochrome
+// FLAGSHIP COLOR PALETTE
+// Apple/Fintech level - refined neutrals
 // ═══════════════════════════════════════════
 
-const COLORS = {
-  // Pure black canvas
+const PALETTE = {
+  // Canvas
   background: 0x000000,
 
-  // Globe - deep charcoal with subtle warm undertone
-  globeBase: [0.08, 0.08, 0.1],
-  globeEmissive: 0x0a0a0f,
+  // Globe base - warm charcoal
+  globeSurface: new Color().setHSL(0, 0, 0.10),
+  globeEmissive: new Color().setHSL(0.6, 0.05, 0.02),
 
-  // Atmosphere - subtle warm white glow
-  atmosphere: "#ffffff",
+  // Atmosphere - extremely subtle warm white
+  atmosphere: "#1a1a1a",
 
-  // Landmass - refined grays
-  landPrimary: "rgba(255, 255, 255, 0.15)",
-  landHighlight: "rgba(255, 255, 255, 0.35)",
+  // Geography - clean vector-style
+  landFill: "rgba(255, 255, 255, 0.06)",
+  landStroke: "rgba(255, 255, 255, 0.12)",
 
-  // Arcs - pure white with varying opacity
-  arcColors: [
-    '#ffffff',
-    '#e0e0e0',
-    '#c0c0c0',
-  ],
+  // Arcs - subtle off-white
+  arc: "rgba(255, 255, 255, 0.4)",
 };
 
 // ═══════════════════════════════════════════
-// INITIALIZATION
+// INIT
 // ═══════════════════════════════════════════
 
 init();
@@ -68,76 +69,93 @@ initTooltip();
 onWindowResize();
 animate();
 
-// Geolocation
 if ('geolocation' in navigator) {
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    },
+    (pos) => { userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
     () => { }
   );
 }
 
 // ═══════════════════════════════════════════
-// SCENE SETUP - CINEMATIC QUALITY
+// FLAGSHIP RENDERER - MAXIMUM QUALITY
 // ═══════════════════════════════════════════
 
 function init() {
-  // Maximum quality renderer
+  // Ultra-high quality WebGL renderer
   renderer = new WebGLRenderer({
     antialias: true,
     alpha: false,
     powerPreference: "high-performance",
-    stencil: false,
+    precision: "highp",
+    logarithmicDepthBuffer: true,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Maximum pixel ratio for crisp rendering
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 3));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(COLORS.background, 1);
+
+  // Filmic tone mapping for premium look
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.outputColorSpace = SRGBColorSpace;
+
+  // Soft shadows
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFSoftShadowMap;
+
+  // Pure black background
+  renderer.setClearColor(PALETTE.background, 1);
+
   document.body.appendChild(renderer.domElement);
 
   // Scene
   scene = new Scene();
-  scene.background = new Color(COLORS.background);
+  scene.background = new Color(PALETTE.background);
 
-  // Subtle ambient
-  scene.add(new AmbientLight(0xffffff, 0.08));
+  // ═══════════════════════════════════════════
+  // EDITORIAL STUDIO LIGHTING
+  // Soft, diffused, cinematic
+  // ═══════════════════════════════════════════
 
-  // Camera - centered view
-  camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+  // Hemisphere light for soft ambient fill
+  const hemiLight = new HemisphereLight(0xffffff, 0x080808, 0.3);
+  hemiLight.position.set(0, 200, 0);
+  scene.add(hemiLight);
+
+  // Camera
+  camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 2000);
   camera.position.set(0, 0, 380);
 
-  // Key light - soft white from top-left
-  const keyLight = new DirectionalLight(0xffffff, 0.6);
-  keyLight.position.set(-300, 400, 300);
+  // Key light - soft diffused from top-left
+  const keyLight = new DirectionalLight(0xffffff, 0.5);
+  keyLight.position.set(-250, 350, 250);
+  keyLight.castShadow = false;
   camera.add(keyLight);
 
-  // Fill light - very soft from right
-  const fillLight = new DirectionalLight(0xffffff, 0.15);
-  fillLight.position.set(200, 0, 300);
+  // Fill light - extremely soft from opposite side
+  const fillLight = new DirectionalLight(0xffffff, 0.08);
+  fillLight.position.set(200, -50, 200);
   camera.add(fillLight);
 
-  // Rim light - subtle backlight
-  const rimLight = new DirectionalLight(0xffffff, 0.1);
-  rimLight.position.set(0, 200, -400);
+  // Subtle rim/backlight for edge separation
+  const rimLight = new DirectionalLight(0xffffff, 0.06);
+  rimLight.position.set(0, 100, -350);
   camera.add(rimLight);
 
   scene.add(camera);
 
-  // Minimal fog
-  scene.fog = new Fog(COLORS.background, 500, 1200);
-
-  // Controls
+  // Controls - ultra-smooth
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.03;
+  controls.dampingFactor = 0.02;
   controls.enablePan = false;
   controls.enableZoom = true;
-  controls.minDistance = 280;
-  controls.maxDistance = 550;
-  controls.rotateSpeed = 0.4;
-  controls.zoomSpeed = 0.6;
+  controls.minDistance = 300;
+  controls.maxDistance = 500;
+  controls.rotateSpeed = 0.3;
+  controls.zoomSpeed = 0.4;
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 0.15;
+  controls.autoRotateSpeed = 0.08; // Ultra-slow, controlled
 
   controls.minPolarAngle = Math.PI / 3;
   controls.maxPolarAngle = Math.PI - Math.PI / 3;
@@ -148,12 +166,12 @@ function init() {
   mouse = new Vector2();
 
   window.addEventListener("resize", onWindowResize, false);
-  document.addEventListener("mousemove", onMouseMove);
   renderer.domElement.addEventListener("click", onGlobeClick);
 }
 
 // ═══════════════════════════════════════════
-// GLOBE - REFINED MONOCHROME
+// HIGH-FIDELITY GLOBE
+// Smooth polygons, no hex dots
 // ═══════════════════════════════════════════
 
 function initGlobe() {
@@ -161,23 +179,39 @@ function initGlobe() {
     waitForGlobeReady: true,
     animateIn: true,
   })
-    .hexPolygonsData(countries.features)
-    .hexPolygonResolution(3)
-    .hexPolygonMargin(0.7)
+    // Use smooth polygons instead of hex grid
+    .polygonsData(countries.features)
+    .polygonCapColor(() => PALETTE.landFill)
+    .polygonSideColor(() => "rgba(0, 0, 0, 0)")
+    .polygonStrokeColor(() => PALETTE.landStroke)
+    .polygonAltitude(0.002)
+
+    // Subtle atmosphere
     .showAtmosphere(true)
-    .atmosphereColor(COLORS.atmosphere)
-    .atmosphereAltitude(0.12)
-    .hexPolygonColor(() => COLORS.landPrimary);
+    .atmosphereColor(PALETTE.atmosphere)
+    .atmosphereAltitude(0.15);
 
   Globe.rotateY(-Math.PI * (5 / 9));
   Globe.rotateZ(-Math.PI / 6);
 
-  // Premium matte globe material
+  // ═══════════════════════════════════════════
+  // PBR GLOBE MATERIAL
+  // Matte-satin composite, premium finish
+  // ═══════════════════════════════════════════
+
   const globeMaterial = Globe.globeMaterial();
-  globeMaterial.color = new Color(...COLORS.globeBase);
-  globeMaterial.emissive = new Color(COLORS.globeEmissive);
-  globeMaterial.emissiveIntensity = 0.05;
-  globeMaterial.shininess = 0.1;
+
+  // Custom PBR-like properties
+  globeMaterial.color = PALETTE.globeSurface;
+  globeMaterial.emissive = PALETTE.globeEmissive;
+  globeMaterial.emissiveIntensity = 0.02;
+
+  // Matte-satin finish
+  globeMaterial.shininess = 5;
+  globeMaterial.specular = new Color(0x111111);
+
+  // Ensure smooth shading
+  globeMaterial.flatShading = false;
 
   scene.add(Globe);
 
@@ -186,12 +220,12 @@ function initGlobe() {
 }
 
 // ═══════════════════════════════════════════
-// ARC SYSTEM
+// ARC SYSTEM - Hairline bezier curves
 // ═══════════════════════════════════════════
 
 function generateRandomLocation() {
-  const lat = (Math.random() - 0.5) * 140;
-  const lng = (Math.random() - 0.5) * 360;
+  const lat = (Math.random() - 0.5) * 120;
+  const lng = (Math.random() - 0.5) * 340;
   return { lat, lng };
 }
 
@@ -203,8 +237,8 @@ function createMessageArc(message) {
     startLng: userLocation.lng,
     endLat: endLocation.lat,
     endLng: endLocation.lng,
-    arcAlt: 0.12 + Math.random() * 0.18,
-    color: COLORS.arcColors[Math.floor(Math.random() * COLORS.arcColors.length)],
+    arcAlt: 0.08 + Math.random() * 0.12,
+    color: PALETTE.arc,
     message: message,
     timestamp: Date.now(),
   };
@@ -225,16 +259,16 @@ function createMessageArc(message) {
       lng: endLocation.lng,
       message: message,
       timestamp: Date.now(),
-      size: 0.4,
-      color: '#ffffff',
+      size: 0.25,
+      color: 'rgba(255, 255, 255, 0.6)',
     });
 
-    if (landedMessages.length > 50) {
-      landedMessages = landedMessages.slice(-50);
+    if (landedMessages.length > 40) {
+      landedMessages = landedMessages.slice(-40);
     }
 
     updatePoints();
-  }, 3000);
+  }, 2500);
 }
 
 function updateArcs() {
@@ -242,11 +276,11 @@ function updateArcs() {
     .arcsData(currentArcs)
     .arcColor('color')
     .arcAltitude('arcAlt')
-    .arcStroke(0.4)
+    .arcStroke(0.3)          // Hairline
     .arcDashLength(0.9)
     .arcDashGap(4)
-    .arcDashAnimateTime(1800)
-    .arcsTransitionDuration(400);
+    .arcDashAnimateTime(1500)
+    .arcsTransitionDuration(300);
 }
 
 function updatePoints() {
@@ -255,7 +289,7 @@ function updatePoints() {
     .pointLat('lat')
     .pointLng('lng')
     .pointColor('color')
-    .pointAltitude(0.01)
+    .pointAltitude(0.005)
     .pointRadius('size')
     .pointsMerge(false);
 }
@@ -278,11 +312,11 @@ function showTooltip(message, x, y) {
   tooltip.style.left = `${x}px`;
   tooltip.style.top = `${y}px`;
   tooltip.classList.add('visible');
-  setTimeout(() => hideTooltip(), 3500);
+  setTimeout(() => hideTooltip(), 3000);
 }
 
 function hideTooltip() {
-  document.getElementById('message-tooltip').classList.remove('visible');
+  document.getElementById('message-tooltip')?.classList.remove('visible');
 }
 
 // ═══════════════════════════════════════════
@@ -308,7 +342,7 @@ function onGlobeClick(event) {
 
     landedMessages.forEach(msg => {
       const dist = Math.sqrt(Math.pow(msg.lat - lat, 2) + Math.pow(msg.lng - lng, 2));
-      if (dist < closestDist && dist < 20) {
+      if (dist < closestDist && dist < 15) {
         closestDist = dist;
         closestMessage = msg;
       }
@@ -338,7 +372,7 @@ function initMessageUI() {
     }
   });
 
-  setTimeout(() => input.focus(), 1000);
+  setTimeout(() => input.focus(), 800);
 }
 
 function sendMessage() {
@@ -350,7 +384,7 @@ function sendMessage() {
   let message = input.value.trim();
 
   if (!message) {
-    const defaults = ["You are enough", "Sending love", "You've got this", "Keep going", "You matter"];
+    const defaults = ["You are enough", "Sending love", "Keep going", "You matter", "Stay strong"];
     message = defaults[Math.floor(Math.random() * defaults.length)];
   }
 
@@ -365,8 +399,8 @@ function sendMessage() {
     setTimeout(() => {
       sendBtn.textContent = '→';
       sendBtn.disabled = false;
-    }, 1200);
-  }, 400);
+    }, 1000);
+  }, 300);
 }
 
 function updateStats() {
@@ -377,24 +411,17 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════
-// EVENT HANDLERS
+// RESIZE
 // ═══════════════════════════════════════════
-
-function onMouseMove(event) {
-  mouseX = event.clientX - windowHalfX;
-  mouseY = event.clientY - windowHalfY;
-}
 
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  windowHalfX = window.innerWidth / 2;
-  windowHalfY = window.innerHeight / 2;
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 // ═══════════════════════════════════════════
-// ANIMATION
+// ANIMATION - Butter smooth
 // ═══════════════════════════════════════════
 
 function animate() {
