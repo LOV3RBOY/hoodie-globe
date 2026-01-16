@@ -1,0 +1,19 @@
+{
+  "name": "hoodie-globe",
+  "version": "1.0.0",
+  "description": "Global message exchange for hoodie brand - send positive notes around the world",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.170.0",
+    "three-globe": "^2.31.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
