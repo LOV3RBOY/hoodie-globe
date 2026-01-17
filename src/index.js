@@ -19,6 +19,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import countries from "./files/globe-data-min.json";
+import { saveMessage } from "./firebase.js";
 
 // ═══════════════════════════════════════════
 // STATE
@@ -246,6 +247,15 @@ function createMessageArc(message) {
   currentArcs.push(arc);
   messagesInTransit++;
   messagesSent++;
+
+  // Save to Firebase
+  saveMessage({
+    text: message,
+    startLat: userLocation.lat,
+    startLng: userLocation.lng,
+    endLat: endLocation.lat,
+    endLng: endLocation.lng,
+  }).catch(err => console.warn('Failed to save message:', err));
 
   updateStats();
   updateArcs();
